@@ -22,7 +22,7 @@ const port = 4000;
 
 //Purpose: To allow the frontend to access the backend
 const corsOptions = {
-    origin: 'amadan-three.vercel.app',
+    origin: 'ramadan-three.vercel.app',
     optionsSuccessStatus: 200,
     credentials: true
   }
