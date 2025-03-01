@@ -22,7 +22,7 @@ const port = 4000;
 
 //Purpose: To allow the frontend to access the backend
 const corsOptions = {
-    origin: ['ramadan-three.vercel.app' , 'https://ramadan-468ptjpbw-ramadans-projects-777f5ec4.vercel.app'],
+    origin: ['https://ramadan-three.vercel.app' , 'https://ramadan-468ptjpbw-ramadans-projects-777f5ec4.vercel.app'],
     optionsSuccessStatus: 200,
     credentials: true
   }
