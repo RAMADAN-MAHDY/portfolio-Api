@@ -45,6 +45,7 @@ app.use(async (req, res, next) => {
         },
     });
     await req.session.save(); 
+    
     next();
 });
  
