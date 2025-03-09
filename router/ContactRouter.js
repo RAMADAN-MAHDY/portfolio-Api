@@ -49,7 +49,7 @@ ContactRouter.post("/", async (req, res) => {
 
     req.session.conversationId = conversation._id;
     req.session.senderId = senderId;
-    await conversation.save();
+    await req.session.save();
     res.status(200).json({ message: "تم إرسال الرسالة بنجاح", data: message , Success: true ,conversationId : conversation._id });
   } catch (error) {
     console.error("Error occurred:", error);
