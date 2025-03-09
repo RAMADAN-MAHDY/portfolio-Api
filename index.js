@@ -44,6 +44,7 @@ app.use(async (req, res, next) => {
             maxAge: 60 * 60 * 24 * 30,
         },
     });
+    await req.session.save(); 
     next();
 });
  
