@@ -31,7 +31,7 @@ chatRouter.post("/", async (req, res) => {
       
       // إرسال الرسالة عبر Pusher
       const message = await sendMessage(userId, messageText, conversationId , adminId);
-      await req.session.save();
+    //   await req.session.save();
       res.status(200).json({ message: "تم إرسال رد  بنجاح", data: message });
     } catch (error) {
       console.error("خطأ أثناء إرسال رد الإدمن:", error);

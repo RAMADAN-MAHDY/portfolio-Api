@@ -40,7 +40,7 @@ app.use(async (req, res, next) => {
         cookieOptions: {
             secure: process.env.NODE_ENV === "production",  // خليها false أثناء التطوير
             httpOnly: true,
-            sameSite: "strict", // تأكد إنها "lax" وليس "strict"
+            sameSite: "lax", // تأكد إنها "lax" وليس "strict"
             maxAge: 60 * 60 * 24 * 30,
         },
     });

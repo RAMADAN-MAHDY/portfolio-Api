@@ -6,6 +6,7 @@ getMessage.get("/", async (req, res) => {
     try {
     //   const { conversationId } = req.params;
       const conversationId = req.session.conversationId;
+      console.log(conversationId)
       const messages = await Message_Schema.find({ conversationId }).sort({ timestamp: 1 });
   
       res.status(200).json({ messages });

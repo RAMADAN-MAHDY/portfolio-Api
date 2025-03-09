@@ -46,10 +46,12 @@ ContactRouter.post("/", async (req, res) => {
     await conversation.save();
     // إرسال الرسالة عبر Pusher
     const message = await sendMessage(senderId, messageTextStr, conversation._id ,adminId);
-
-    req.session.conversationId = conversation._id;
-    req.session.senderId = senderId;
-    await req.session.save();
+    if(!req.session.conversationId){
+        req.session.conversationId = conversation._id;
+        req.session.senderId = senderId;
+        await req.session.save();
+    }
+    
     res.status(200).json({ message: "تم إرسال الرسالة بنجاح", data: message , Success: true ,conversationId : conversation._id });
   } catch (error) {
     console.error("Error occurred:", error);
