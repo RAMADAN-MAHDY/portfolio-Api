@@ -28,7 +28,7 @@ chatRouter.post("/", async (req, res) => {
       });
 
       conversation.createdAt = Date.now();
-      await conversation.save();
+      
       // إرسال الرسالة عبر Pusher
       const message = await sendMessage(userId, messageText, conversationId , adminId);
       await req.session.save();
