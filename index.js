@@ -40,11 +40,18 @@ app.use(async (req, res, next) => {
         cookieOptions: {
             secure:true,  // خليها false أثناء التطوير
             httpOnly: true,
-            sameSite: "lax", // تأكد إنها "lax" وليس "strict"
+            sameSite: "None", // تأكد إنها "lax" وليس "strict"
             maxAge: 60 * 60 * 24 * 30,
         },
     });
-    await req.session.save(); 
+      // تحقق إذا كان هناك تغيير في بيانات الجلسة
+      const previousViews = req.session.views || 0; // القيمة السابقة
+      req.session.views = previousViews + 1; // تحديث عدد الزيارات
+  
+      if (req.session.views !== previousViews) {
+          // احفظ الجلسة فقط إذا كانت هناك تغييرات فعلية
+          await req.session.save();
+      }
     
     next();
 });
