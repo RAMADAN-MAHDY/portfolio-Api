@@ -27,8 +27,8 @@ subscribe.post("/", async (req, res) => {
 
         res.status(200).json({ message: "Subscription saved successfully", data: updatedSubscription });
     } catch (error) {
-        console.error("Error saving subscription:", error);
-        res.status(500).json({ error: "Internal server error" });
+        console.error("❌ Error saving subscription:", error);
+        res.status(500).json({ error: "Internal server error", details: error.message });
     }
 });
 
