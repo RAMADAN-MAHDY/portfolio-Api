@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const PushSubscriptionSchema = new mongoose.Schema({
-    UserId : { type: String, required: true }, 
+    UserId : { type: String, required: true ,  unique: true }, 
     subscription: { type: Object, required: true },
     createdAt: { type: Date, default: Date.now }
 });

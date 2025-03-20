@@ -9,7 +9,10 @@ subscribe.post("/", async (req, res) => {
         console.log("📩 Received Subscription Data:", req.body);
         const {UserId , subscription } = req.body;
 
-        if (!UserId) {
+        if (!UserId || UserId === 'null') {
+            return res.status(400).json({ error: "Invalid User ID" });
+        }
+         if (!UserId) {
             return res.status(400).json({ error: "User ID is required" });
         }
 
