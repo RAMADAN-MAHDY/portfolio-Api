@@ -13,6 +13,7 @@ import subscription from './router/save-subscription.js';
 import unsubscription from './router/unsubscribe.js';
 import sendNotificationToAll from './webpush/sendNotificationToAll.js';
 import { getIronSession } from "iron-session";
+import AiAsestant from './GEMINI_API/aiChat.js';
 Dotenv.config();
 
 const app = express();
@@ -20,7 +21,7 @@ const port = 4000;
 
 //Purpose: To allow the frontend to access the backend
 const corsOptions = {
-    origin: ['https://ramadan-three.vercel.app' , 'https://ramadan-468ptjpbw-ramadans-projects-777f5ec4.vercel.app'],
+    origin: ['https://ramadan-three.vercel.app' , 'http://localhost:3000', 'https://ramadan-468ptjpbw-ramadans-projects-777f5ec4.vercel.app'],
     optionsSuccessStatus: 200,
     credentials: true
   }
@@ -38,7 +39,7 @@ app.use(async (req, res, next) => {
         cookieName: "session",
         password: process.env.session_secret_key,
         cookieOptions: {
-            secure:true,  // خليها false أثناء التطوير
+            secure:false,  // خليها false أثناء التطوير
             httpOnly: true,
             sameSite: "None", // تأكد إنها "lax" وليس "strict"
             maxAge: 60 * 60 * 24 * 30,
@@ -68,6 +69,7 @@ app.use('/chat', chatRouter);
 app.use('/unsubscription', unsubscription);
 app.use('/subscription', subscription);
 app.use('/sendNotificationToAll', sendNotificationToAll);
+app.use('/ai', AiAsestant);
 
 
 
