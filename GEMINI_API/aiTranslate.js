@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 import multer from "multer";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import FileModel from '../schema/FileSchema.js';
+import mongoose from 'mongoose';
+import { GridFSBucket } from 'mongodb';
 
 dotenv.config();
 
@@ -57,12 +59,20 @@ router.post("/translate", async (req, res) => {
         if (!userFile) {
             return res.status(404).json({ error: "لا يوجد ملف بهذا المعرف. إذا رفعت ملف جديد، تأكد أن المتصفح لم يمسح بياناته أو أعد رفع الملف." });
         }
-        const filePath = userFile.filePath;
-        if (!fs.existsSync(filePath)) {
-            console.error('❌ ملف PDF غير موجود فعلياً على السيرفر:', filePath);
-            return res.status(404).json({ error: "ملف PDF غير موجود فعلياً على السيرفر." });
-        }
-        const pages = await extractPagesFromPDF(filePath);
+        // استرجاع ملف PDF من GridFS إلى /tmp
+        const conn = mongoose.connection;
+        const bucket = new GridFSBucket(conn.db, { bucketName: 'pdfs' });
+        const gridfsId = new mongoose.Types.ObjectId(userFile.filePath);
+        const tempPdfPath = path.join(tmpDir, `${fileId}.pdf`);
+        await new Promise((resolve, reject) => {
+          const downloadStream = bucket.openDownloadStream(gridfsId);
+          const writeStream = fs.createWriteStream(tempPdfPath);
+          downloadStream.pipe(writeStream)
+            .on('error', reject)
+            .on('finish', resolve);
+        });
+        // أكمل الترجمة من الملف المؤقت
+        const pages = await extractPagesFromPDF(tempPdfPath);
         const outputFilePath = path.join(tmpDir, 'translated_output.txt');
         // ✅ إيجاد أول صفحتين غير مترجمين لهذا الملف
         let startIndex = null;
@@ -89,6 +99,8 @@ router.post("/translate", async (req, res) => {
         // تحديث donePages لهذا الملف فقط في MongoDB
         userFile.donePages = [...donePages, pageRange];
         await userFile.save();
+        // حذف الملف المؤقت بعد الترجمة
+        fs.unlinkSync(tempPdfPath);
         res.json({
             message: `✅ تم ترجمة الصفحات ${pageRange}.`,
             translatedPages: pageRange,
