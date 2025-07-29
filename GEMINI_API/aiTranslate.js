@@ -6,6 +6,7 @@ import extractPagesFromPDF from './extractTexetfromPdf.js';
 import dotenv from "dotenv";
 import multer from "multer";
 import { Document, Packer, Paragraph, TextRun } from "docx";
+import FileModel from '../schema/FileSchema.js';
 
 dotenv.config();
 
@@ -37,16 +38,11 @@ router.post("/translate", async (req, res) => {
         if (!fileId) {
             return res.status(400).json({ error: "يجب إرسال fileId مع الطلب." });
         }
-        const metadataFile = path.resolve("./uploads/metadata.json");
-        if (!fs.existsSync(metadataFile)) {
-            return res.status(404).json({ error: "لم يتم العثور على ملفات مرفوعة." });
-        }
-        const metadata = JSON.parse(fs.readFileSync(metadataFile));
-        const fileIndex = metadata.findIndex(meta => meta.fileId === fileId);
-        if (fileIndex === -1) {
+        // جلب بيانات الملف من MongoDB
+        const userFile = await FileModel.findOne({ fileId });
+        if (!userFile) {
             return res.status(404).json({ error: "لا يوجد ملف بهذا المعرف. إذا رفعت ملف جديد، تأكد أن المتصفح لم يمسح بياناته أو أعد رفع الملف." });
         }
-        const userFile = metadata[fileIndex];
         const filePath = userFile.filePath;
         const pages = await extractPagesFromPDF(filePath);
         const outputFilePath = './tmp/translated_output.txt';
@@ -72,10 +68,9 @@ router.post("/translate", async (req, res) => {
         const translated = await runAiTranslation(combinedText);
         const outputEntry = `--- الصفحات ${pageRange} ---\n${translated}\n\n`;
         fs.appendFileSync(outputFilePath, outputEntry);
-        // تحديث donePages لهذا الملف فقط
+        // تحديث donePages لهذا الملف فقط في MongoDB
         userFile.donePages = [...donePages, pageRange];
-        metadata[fileIndex] = userFile;
-        fs.writeFileSync(metadataFile, JSON.stringify(metadata, null, 2));
+        await userFile.save();
         res.json({
             message: `✅ تم ترجمة الصفحات ${pageRange}.`,
             translatedPages: pageRange,
