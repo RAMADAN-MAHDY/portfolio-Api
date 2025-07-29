@@ -10,8 +10,20 @@ import FileModel from '../schema/FileSchema.js';
 
 dotenv.config();
 
+const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp' : './uploads';
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage });
 
 const router = express.Router();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
