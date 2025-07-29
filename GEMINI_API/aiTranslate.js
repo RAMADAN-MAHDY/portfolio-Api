@@ -58,6 +58,10 @@ router.post("/translate", async (req, res) => {
             return res.status(404).json({ error: "لا يوجد ملف بهذا المعرف. إذا رفعت ملف جديد، تأكد أن المتصفح لم يمسح بياناته أو أعد رفع الملف." });
         }
         const filePath = userFile.filePath;
+        if (!fs.existsSync(filePath)) {
+            console.error('❌ ملف PDF غير موجود فعلياً على السيرفر:', filePath);
+            return res.status(404).json({ error: "ملف PDF غير موجود فعلياً على السيرفر." });
+        }
         const pages = await extractPagesFromPDF(filePath);
         const outputFilePath = path.join(tmpDir, 'translated_output.txt');
         // ✅ إيجاد أول صفحتين غير مترجمين لهذا الملف
@@ -92,8 +96,8 @@ router.post("/translate", async (req, res) => {
             downloadUrlword: "/ai/translate/download-word",
         });
     } catch (err) {
-        console.error("❌ خطأ أثناء الترجمة:", err);
-        res.status(500).json({ error: "حدث خطأ أثناء الترجمة." });
+        console.error("❌ خطأ أثناء الترجمة:", err, req.body);
+        res.status(500).json({ error: "حدث خطأ أثناء الترجمة.", details: err.message });
     }
 });
 
