@@ -32,6 +32,8 @@ const runAiTranslation = async (text) => {
     return result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || '';
 };
 
+const tmpDir = process.env.NODE_ENV === 'production' ? '/tmp' : './tmp';
+
 router.post("/translate", async (req, res) => {
     try {
         const { fileId } = req.body;
@@ -45,7 +47,7 @@ router.post("/translate", async (req, res) => {
         }
         const filePath = userFile.filePath;
         const pages = await extractPagesFromPDF(filePath);
-        const outputFilePath = './tmp/translated_output.txt';
+        const outputFilePath = path.join(tmpDir, 'translated_output.txt');
         // ✅ إيجاد أول صفحتين غير مترجمين لهذا الملف
         let startIndex = null;
         let pageRange = "";
@@ -85,7 +87,7 @@ router.post("/translate", async (req, res) => {
 
 // 🎯 endpoint لتحميل الترجمة
 router.get("/translate/download", (req, res) => {
-    const filePath = path.resolve('./tmp/translated_output.txt');
+    const filePath = path.join(tmpDir, 'translated_output.txt');
 
     if (!fs.existsSync(filePath)) {
         return res.status(404).send("⚠️ ملف الترجمة غير موجود بعد.");
@@ -96,7 +98,7 @@ router.get("/translate/download", (req, res) => {
 
 
 router.get("/translate/download-word", (req, res) => {
-  const filePath = path.resolve('./tmp/translated_output.docx');
+  const filePath = path.join(tmpDir, 'translated_output.docx');
   if (!fs.existsSync(filePath)) return res.status(404).send("⚠️ ملف وورد غير موجود.");
   res.download(filePath, "translated_output.docx");
 });
@@ -104,8 +106,8 @@ router.get("/translate/download-word", (req, res) => {
 // Endpoint لإنشاء ملف Word من الترجمة النصية
 router.post("/translate/generate-word", async (req, res) => {
   try {
-    const textPath = path.resolve("./tmp/translated_output.txt");
-    const wordPath = path.resolve("./tmp/translated_output.docx");
+    const textPath = path.join(tmpDir, 'translated_output.txt');
+    const wordPath = path.join(tmpDir, 'translated_output.docx');
     if (!fs.existsSync(textPath)) {
       return res.status(404).json({ error: "⚠️ ملف الترجمة النصية غير موجود." });
     }

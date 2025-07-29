@@ -4,9 +4,9 @@ import fs from "fs";
 import path from "path";
 import FileModel from '../schema/FileSchema.js';
 
+const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp' : './uploads';
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = "./uploads";
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir);
     }
