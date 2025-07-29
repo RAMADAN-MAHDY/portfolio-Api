@@ -4,9 +4,13 @@ import path from "path";
 import multer from "multer";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 // إعداد multer لحفظ الملفات في مجلد محلي
+const uploadDir = process.env.NODE_ENV === 'production' ? '/tmp' : './uploads';
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "./uploads"); // تأكد إن المجلد ده موجود
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
