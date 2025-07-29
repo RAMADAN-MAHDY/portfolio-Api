@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI PDF Translator Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f7f7f7; }
+    .container { background: #fff; padding: 30px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 2px 8px #0001; }
+    h1 { color: #2c3e50; }
+    label { display: block; margin: 15px 0 5px; }
+    input[type="file"] { margin-bottom: 15px; }
+    button { background: #3498db; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #217dbb; }
+    .result, .download-links { margin-top: 20px; }
+    .download-links a { margin-right: 15px; }
+    .error { color: #c0392b; }
+    .success { color: #27ae60; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI PDF Translator Dashboard</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <label for="pdfFile">Upload PDF File:</label>
+      <input type="file" id="pdfFile" name="pdfFile" accept="application/pdf" required>
+      <button type="submit">Upload</button>
+    </form>
+    <div class="result" id="uploadResult"></div>
+    <hr>
+    <button id="translateBtn">Translate Next 2 Pages</button>
+    <div class="result" id="translateResult"></div>
+    <div class="download-links" id="downloadLinks"></div>
+    <button id="generateWordBtn" style="margin-top:20px;">Generate Word File</button>
+    <div class="result" id="wordResult"></div>
+    <div style="margin-top:20px; color:#888; font-size:14px;" id="userIdInfo"></div>
+  </div>
+  <script>
+    let currentFileId = localStorage.getItem('currentFileId') || null;
+
+    // رفع الملف
+    document.getElementById('uploadForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      document.getElementById('uploadResult').textContent = 'Uploading...';
+      try {
+        const res = await fetch('/upload/upload-pdf', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('uploadResult').innerHTML = '<span class="success">' + data.message + '</span>';
+          if (data.fileId) {
+            currentFileId = data.fileId;
+            localStorage.setItem('currentFileId', currentFileId);
+          }
+        } else {
+          document.getElementById('uploadResult').innerHTML = '<span class="error">' + (data.error || 'Upload failed') + '</span>';
+        }
+      } catch (err) {
+        document.getElementById('uploadResult').innerHTML = '<span class="error">Error uploading file</span>';
+      }
+    };
+
+    // ترجمة الصفحتين التاليتين
+    document.getElementById('translateBtn').onclick = async function() {
+      document.getElementById('translateResult').textContent = 'Translating...';
+      if (!currentFileId) {
+        document.getElementById('translateResult').innerHTML = '<span class="error">Please upload a PDF file first.</span>';
+        return;
+      }
+      try {
+        const res = await fetch('/ai/translate', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileId: currentFileId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('translateResult').innerHTML = '<span class="success">' + data.message + '</span>';
+          let links = '';
+          if (data.downloadUrl) links += `<a href="${data.downloadUrl}" target="_blank">Download TXT</a>`;
+          document.getElementById('downloadLinks').innerHTML = links;
+        } else {
+          document.getElementById('translateResult').innerHTML = '<span class="error">' + (data.error || 'Translation failed') + '</span>';
+        }
+      } catch (err) {
+        document.getElementById('translateResult').innerHTML = '<span class="error">Error during translation</span>';
+      }
+    };
+
+    // إنشاء ملف Word من الترجمة النصية
+    document.getElementById('generateWordBtn').onclick = async function() {
+      document.getElementById('wordResult').textContent = 'Generating Word file...';
+      try {
+        const res = await fetch('/ai/translate/generate-word', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('wordResult').innerHTML = '<span class="success">' + data.message + '</span>' + (data.downloadUrl ? `<br><a href="${data.downloadUrl}" target="_blank">Download Word</a>` : '');
+        } else {
+          document.getElementById('wordResult').innerHTML = '<span class="error">' + (data.error || 'Word generation failed') + '</span>';
+        }
+      } catch (err) {
+        document.getElementById('wordResult').innerHTML = '<span class="error">Error generating Word file</span>';
+      }
+    };
+
+    // عرض userId الحالي
+    fetch('/whoami', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.userId) {
+          document.getElementById('userIdInfo').textContent = 'Session User ID: ' + data.userId;
+        }
+      });
+
+    // عند تحميل الصفحة، إذا كان هناك ملف سابق في localStorage، أظهر رسالة بذلك
+    if (currentFileId) {
+      document.getElementById('uploadResult').innerHTML = '<span class="success">تم حفظ ملفك ويمكنك استكمال الترجمة.</span>';
+    }
+  </script>
+</body>
+</html>

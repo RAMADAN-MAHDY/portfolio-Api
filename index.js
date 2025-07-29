@@ -14,6 +14,15 @@ import unsubscription from './router/unsubscribe.js';
 import sendNotificationToAll from './webpush/sendNotificationToAll.js';
 import { getIronSession } from "iron-session";
 import AiAsestant from './GEMINI_API/aiChat.js';
+import aiTranslate from './GEMINI_API/aiTranslate.js';
+import generateWordRouter from './GEMINI_API/generateWordFromText.js';
+import uploadRouter from './GEMINI_API/uploadRouter.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 Dotenv.config();
 
 const app = express();
@@ -45,6 +54,11 @@ app.use(async (req, res, next) => {
             maxAge: 60 * 60 * 24 * 30,
         },
     });
+    // توليد userId عشوائي إذا لم يوجد
+    if (!req.session.userId) {
+        req.session.userId = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        await req.session.save();
+    }
       // تحقق إذا كان هناك تغيير في بيانات الجلسة
       const previousViews = req.session.views || 0; // القيمة السابقة
       req.session.views = previousViews + 1; // تحديث عدد الزيارات
@@ -70,10 +84,22 @@ app.use('/unsubscription', unsubscription);
 app.use('/subscription', subscription);
 app.use('/sendNotificationToAll', sendNotificationToAll);
 app.use('/ai', AiAsestant);
+app.use('/ai', aiTranslate);
+app.use('/ai', generateWordRouter);
+app.use('/upload', uploadRouter);
 
+// إعداد محرك القوالب EJS
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
+// Route لعرض صفحة رفع الملفات
+app.get('/upload-view', (req, res) => {
+  res.render('upload');
+});
 
 app.get('/', async (req, res) => {
+
+
     if (!req.session.views) {
         req.session.views = 1;
       } else {
@@ -82,6 +108,14 @@ app.get('/', async (req, res) => {
       await req.session.save();
       res.send(`عدد زياراتك: ${req.session.views}`);
 })
+
+app.get('/dashboard', (req, res) => {
+  res.render('dashboard');
+});
+
+app.get('/whoami', (req, res) => {
+  res.json({ userId: req.session.userId });
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port http://localhost:${port}`)
