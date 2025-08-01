@@ -70,6 +70,7 @@ router.post("/translate", async (req, res) => {
           downloadStream.pipe(writeStream)
             .on('error', reject)
             .on('finish', resolve);
+            
         });
         // أكمل الترجمة من الملف المؤقت
         const pages = await extractPagesFromPDF(tempPdfPath);
