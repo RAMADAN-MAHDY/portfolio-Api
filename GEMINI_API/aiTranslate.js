@@ -73,7 +73,7 @@ router.post("/translate", async (req, res) => {
         });
         // أكمل الترجمة من الملف المؤقت
         const pages = await extractPagesFromPDF(tempPdfPath);
-        const outputFilePath = path.join(tmpDir, 'translated_output.txt');
+        const outputFilePath = path.join(tmpDir, `translated_output_${fileId}.txt`);
         // ✅ إيجاد أول صفحتين غير مترجمين لهذا الملف
         let startIndex = null;
         let pageRange = "";
@@ -104,8 +104,8 @@ router.post("/translate", async (req, res) => {
         res.json({
             message: `✅ تم ترجمة الصفحات ${pageRange}.`,
             translatedPages: pageRange,
-            downloadUrl: "/ai/translate/download",
-            downloadUrlword: "/ai/translate/download-word",
+            downloadUrl: `/ai/translate/download?fileId=${fileId}`,
+            downloadUrlword: `/ai/translate/download-word?fileId=${fileId}`,
         });
     } catch (err) {
         console.error("❌ خطأ أثناء الترجمة:", err, req.body);
@@ -115,27 +115,31 @@ router.post("/translate", async (req, res) => {
 
 // 🎯 endpoint لتحميل الترجمة
 router.get("/translate/download", (req, res) => {
-    const filePath = path.join(tmpDir, 'translated_output.txt');
-
+    const { fileId } = req.query;
+    if (!fileId) return res.status(400).send("يجب إرسال fileId.");
+    const filePath = path.join(tmpDir, `translated_output_${fileId}.txt`);
     if (!fs.existsSync(filePath)) {
         return res.status(404).send("⚠️ ملف الترجمة غير موجود بعد.");
     }
-
-    res.download(filePath, "translated_output.txt");
+    res.download(filePath, `translated_output_${fileId}.txt`);
 });
 
 
 router.get("/translate/download-word", (req, res) => {
-  const filePath = path.join(tmpDir, 'translated_output.docx');
+  const { fileId } = req.query;
+  if (!fileId) return res.status(400).send("يجب إرسال fileId.");
+  const filePath = path.join(tmpDir, `translated_output_${fileId}.docx`);
   if (!fs.existsSync(filePath)) return res.status(404).send("⚠️ ملف وورد غير موجود.");
-  res.download(filePath, "translated_output.docx");
+  res.download(filePath, `translated_output_${fileId}.docx`);
 });
 
 // Endpoint لإنشاء ملف Word من الترجمة النصية
 router.post("/translate/generate-word", async (req, res) => {
   try {
-    const textPath = path.join(tmpDir, 'translated_output.txt');
-    const wordPath = path.join(tmpDir, 'translated_output.docx');
+    const { fileId } = req.body;
+    if (!fileId) return res.status(400).json({ error: "يجب إرسال fileId." });
+    const textPath = path.join(tmpDir, `translated_output_${fileId}.txt`);
+    const wordPath = path.join(tmpDir, `translated_output_${fileId}.docx`);
     if (!fs.existsSync(textPath)) {
       return res.status(404).json({ error: "⚠️ ملف الترجمة النصية غير موجود." });
     }
@@ -152,7 +156,7 @@ router.post("/translate/generate-word", async (req, res) => {
     fs.writeFileSync(wordPath, buffer);
     return res.json({
       message: "✅ تم توليد ملف Word بنجاح.",
-      downloadUrl: "/ai/translate/download-word"
+      downloadUrl: `/ai/translate/download-word?fileId=${fileId}`
     });
   } catch (err) {
     console.error("❌ خطأ أثناء توليد ملف Word:", err);
