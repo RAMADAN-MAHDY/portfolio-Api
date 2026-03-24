@@ -24,6 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 Dotenv.config();
+console.log("Loaded DB_KEY:", process.env.DB_KEY?.substring(0, 30) + "...");
 
 const app = express();
 const port = 4000;

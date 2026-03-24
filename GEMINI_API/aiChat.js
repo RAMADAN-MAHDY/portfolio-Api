@@ -1,91 +1,151 @@
 import express from "express";
 import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
+import AiSession from "../schema/AiSession.js";
+import AiMessage from "../schema/AiMessage.js";
+import { encrypt, decrypt } from "./securityUtils.js";
+import { aboutYou, projects } from "./portfolioData.js";
 
 const router = express.Router();
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-// بياناتك العامة
-const aboutYou = `
-أنا رمضان، مطور ويب  بخبرة قوية في MERN Stack وNext.js وTailwind. express.js وMongoDB.
-أحب البرمجة وحل المشكلات، وأعمل على مشاريع متنوعة من مواقع تسويق إلكتروني إلى أنظمة إدارة المدارس.
-بحب أدمج الذكاء الاصطناعي في المواقع، وبطور دايمًا في نفسي.
-حايلا ابحث عن عمل  كـ مطور ويب  مستقل أو في شركة، وعايز أستخدم مهاراتي في مشاريع جديدة ومثيرة.  
-.
-`;
-
-// بيانات المشاريع
-const projects = [
-  {
-    id: "project_1",
-    title: "موقع تسويق إلكتروني",
-    content: "موقع أفيليت يعرض منتجات منزلية وملابس وأجهزة، مبني بـ Next.js، Tailwind، Redux، Express، MongoDB."
-  },
-  {
-    id: "project_2",
-    title: "نظام تتبع القصات",
-    content: "نظام إدارة وتتبع القصات بمصانع الملابس الصغيرة والمتوسطة، مع لوحة مشرف وأدمن وبحث متقدم."
-  },
-  {
-    id: "project_3",
-    title: "سجل الحضور للمدارس",
-    content: "نظام إدارة الحضور للمدارس الابتدائية، واجهة عربية، تقارير شهرية وسنوية، ترقية الطلاب تلقائيًا."
-  },
-  {
-    id: "project_4",
-    title: "متجر زيت الزيتون",
-    content: "متجر إلكتروني لبيع زيت الزيتون مع لوحة تحكم، نظام تقييمات، حماية JWT، تصميم متجاوب."
-  },{
-  id: "project_5",
-  title: "مؤسسة الخرجي للنظافة العامة",
-  shortDescription: "منصة إلكترونية متكاملة لحجز خدمات التنظيف في الرياض والخرج، مع دعم حجز ذكي، دردشة تفاعلية للمساعدة، وتصميم متجاوب لجميع الأجهزة."
-},
-  {
-  id: "project_6",
-  title: "منصة دعم متلازمة داون",
-  shortDescription: "منصة متكاملة لدعم أهالي الأطفال المصابين بمتلازمة داون. تضم لوحة تحكم لإدارة المحتوى، دردشة ذكية مبنية على Gemini AI، وواجهة برمجية مؤمنة للتكامل مع التطبيقات الأخرى. كنت مسؤولًا عن بناء وإدارة نظام الباك إند بالكامل، بما يشمل المصادقة، إدارة البيانات، وواجهات الـ API، مع التعاون المباشر مع مطور الفرونت لضمان التكامل السلس."
-},{
-  id: "project_7",
-  title: "نظام إدارة المخازن والمبيعات الذكي (Pro Stock Manager)",
-  shortDescription: "نظام متكامل لإدارة العمليات التجارية للمؤسسات والمخازن، يهدف إلى رقمنة العمليات الورقية وتسهيل متابعة المبيعات، المشتريات، والمخزون في وقت حقيقي. تم بناء النظام بمعمارية حديثة تضمن السرعة، الأمان، وتجربة مستخدم استثنائية تدعم اللغة العربية بشكل كامل (RTL)."
-},
-];
-
-router.post("/ask", async (req, res) => {
-  const { question } = req.body;
-
-  if (!question) return res.status(400).json({ error: "السؤال مطلوب" });
-
-  const systemPrompt = `
-أنت مساعد رمضان اللي بيعمل بالذكاء الاصطناعي  مخصص للرد على أسئلة تتعلق برمضان ومشاريعه.
+const systemBasePrompt = `
+أنت مساعد رمضان (Ramadan) الذكي. رمضان مطور ويب خبير في MERN Stack و Next.js.
 بيانات رمضان:
 ${aboutYou}
 
 مشاريع رمضان:
 ${JSON.stringify(projects, null, 2)}
 
-التزم بالرد بناءً على هذه البيانات فقط، ولا تضف معلومات من عندك.
-لو اتسألت عن شيء غير مذكور، قول "المعلومة دي مش موجودة عندي".
-ردودك لازم تكون بالعربية الفصحى البسيطة والمباشرة.
-وكمان خليك محنك في الرد كانك بترد من عندك مش بيانات انت حافظها وكمان استخدم الايموجي في ردك خليك احترافي
+مهمتك الرد على أسئلة العملاء والزوار بناءً على سياق المحادثة وبيانات رمضان المذكورة أعلاه فقط.
+لا تخترع معلومات من عندك. إذا كان السؤال عن شيء غير موجود، قل "المعلومة دي مش عندي حالياً لكن ممكن تتوصل مع رمضان مباشرة".
+كن محترفاً، ودوداً، واستخدم الإيموجي المناسبة 🚀.
+رد بنفس لغة العميل (عربي أو إنجليزي).
 `;
 
-  try {
-  const result = await ai.models.generateContent({
-  model: "gemini-2.5-flash",
-  contents: [
-    { role: "user", parts: [{ text: systemPrompt + "\n\n" + question }] }
-  ],
-  generationConfig: { maxOutputTokens: 500 }
+// جلب جميع جلسات المستخدم
+router.get("/sessions", async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const sessions = await AiSession.find({ userId, isArchived: false }).sort({ lastMessageAt: -1 });
+        res.json(sessions);
+    } catch (err) {
+        res.status(500).json({ error: "خطأ في جلب الجلسات" });
+    }
 });
 
-    const answer = result.candidates?.[0]?.content?.parts?.[0]?.text.trim();
-    res.json({ answer: answer || "لم أتمكن من العثور على إجابة." });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "حدث خطأ أثناء التواصل مع الذكاء الاصطناعي." });
-  }
+// جلب رسائل جلسة معينة
+router.get("/sessions/:sessionId/messages", async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const messages = await AiMessage.find({ sessionId }).sort({ timestamp: 1 });
+        
+        // فك تشفير الرسائل قبل إرسالها للفرونت
+        const decryptedMessages = messages.map(msg => ({
+            ...msg._doc,
+            content: decrypt(msg.content)
+        }));
+        
+        res.json(decryptedMessages);
+    } catch (err) {
+        res.status(500).json({ error: "خطأ في جلب الرسائل" });
+    }
+});
+
+// حذف جلسة (أرشفة)
+router.delete("/sessions/:sessionId", async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        await AiSession.findByIdAndUpdate(sessionId, { isArchived: true });
+        res.json({ message: "تم حذف الجلسة بنجاح" });
+    } catch (err) {
+        res.status(500).json({ error: "خطأ في حذف الجلسة" });
+    }
+});
+
+// السؤال الأساسي
+router.post("/ask", async (req, res) => {
+    const { question, sessionId: existingSessionId, metadata } = req.body;
+    const userId = req.session.userId;
+
+    if (!question) return res.status(400).json({ error: "السؤال مطلوب" });
+
+    try {
+        let session;
+        if (existingSessionId) {
+            session = await AiSession.findById(existingSessionId);
+        }
+
+        if (!session) {
+            session = await AiSession.create({
+                userId,
+                title: question.substring(0, 30) + "...",
+                metadata: metadata || {}
+            });
+        }
+
+        // حفظ رسالة المستخدم (مشفرة)
+        await AiMessage.create({
+            sessionId: session._id,
+            role: "user",
+            content: encrypt(question)
+        });
+
+        // جلب سياق المحادثة (آخر 10 رسائل)
+        const history = await AiMessage.find({ sessionId: session._id })
+            .sort({ timestamp: -1 })
+            .limit(10);
+        
+        const contextMessages = history.reverse().map(msg => ({
+            role: msg.role === "user" ? "user" : "model",
+            parts: [{ text: decrypt(msg.content) }]
+        }));
+
+        // إضافة الملخص التاريخي إذا وجد
+        const fullPrompt = session.summary ? 
+            `سياق قديم ملخص: ${session.summary}\n\n${systemBasePrompt}` : 
+            systemBasePrompt;
+
+        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        const chat = model.startChat({
+            history: contextMessages.slice(0, -1), // كل الرسائل ما عدا الأخيرة اللي لسه مضافتش للـ context كـ input مباشرة
+            generationConfig: { maxOutputTokens: 1000 },
+        });
+
+        const result = await chat.sendMessage(question);
+        const responseText = result.response.text();
+
+        // حفظ رد الذكاء الاصطناعي (مشفر)
+        await AiMessage.create({
+            sessionId: session._id,
+            role: "model",
+            content: encrypt(responseText)
+        });
+
+        // تحديث وقت آخر رسالة وعنوان الجلسة لو كانت أول رسالة
+        session.lastMessageAt = Date.now();
+        await session.save();
+
+        // آلية الضغط والأرشفة (تلقائية لو زادت الرسائل عن 20)
+        const messageCount = await AiMessage.countDocuments({ sessionId: session._id });
+        if (messageCount > 20 && !session.summary) {
+            // طلب تلخيص من الذكاء الاصطناعي لتوفير الموارد مستقبلاً
+            const summaryResult = await model.generateContent(`لخص هذه المحادثة باختصار شديد جداً لاستخدامها كأرشيف سياقي مستقبلي: ${question}\n\n${responseText}`);
+            session.summary = summaryResult.response.text();
+            await session.save();
+        }
+
+        res.json({ 
+            answer: responseText, 
+            sessionId: session._id,
+            title: session.title
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "حدث خطأ أثناء التواصل مع الذكاء الاصطناعي." });
+    }
 });
 
 export default router;
