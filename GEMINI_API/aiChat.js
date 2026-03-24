@@ -60,6 +60,7 @@ router.delete("/sessions/:sessionId", async (req, res) => {
 router.post("/ask", async (req, res) => {
     const { question, sessionId: existingSessionId, metadata } = req.body;
     const userId = req.session.userId;
+    const currentLanguage = metadata?.language || "ar";
 
     if (!question) return res.status(400).json({ error: "السؤال مطلوب" });
 
@@ -109,7 +110,7 @@ router.post("/ask", async (req, res) => {
             generationConfig: { maxOutputTokens: 1000 },
         });
 
-        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || t("Error", "خطأ");
+        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || (currentLanguage === "ar" ? "خطأ" : "Error");
 
         // حفظ رد الذكاء الاصطناعي (مشفر)
         await AiMessage.create({
@@ -142,6 +143,12 @@ router.post("/ask", async (req, res) => {
 
     } catch (err) {
         console.error(err);
+        if (err.status === 429) {
+            const quotaMsg = currentLanguage === "ar" 
+                ? "عذراً، تم الوصول للحد الأقصى للرسائل المجانية حالياً. يرجى المحاولة مرة أخرى بعد دقيقة." 
+                : "AI quota exceeded. Please try again in a minute.";
+            return res.status(429).json({ error: quotaMsg });
+        }
         res.status(500).json({ error: "حدث خطأ أثناء التواصل مع الذكاء الاصطناعي." });
     }
 });
