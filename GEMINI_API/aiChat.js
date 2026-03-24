@@ -6,7 +6,7 @@ import AiMessage from "../schema/AiMessage.js";
 import { encrypt, decrypt } from "./securityUtils.js";
 
 const router = express.Router();
-const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: "v1" });
 
 const systemBasePrompt = `
 أنت مساعد رمضان (Ramadan) الذكي. رمضان مطور ويب خبير في MERN Stack و Next.js.

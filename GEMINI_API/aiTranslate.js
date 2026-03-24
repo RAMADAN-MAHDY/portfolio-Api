@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const router = express.Router();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: "v1" });
 
 const systemPrompt = `
 أنت مترجم محترف. ترجم فقط النص من اللغة الإنجليزية إلى اللغة العربية بدقة وبدون أي تعليقات أو إضافات. لا تفسر، لا توضح، فقط ترجم كما هو.
