@@ -49,9 +49,9 @@ app.use(async (req, res, next) => {
         cookieName: "session",
         password: process.env.session_secret_key,
         cookieOptions: {
-            secure:false,  // خليها false أثناء التطوير
+            secure: true, // يجب أن تكون true ليعمل الـ cookie عبر الدومينات المختلفة (Vercel)
             httpOnly: true,
-            sameSite: "None", // تأكد إنها "lax" وليس "strict"
+            sameSite: "None", 
             maxAge: 60 * 60 * 24 * 30,
         },
     });
