@@ -1,26 +1,19 @@
 import express from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import "dotenv/config";
 import AiSession from "../schema/AiSession.js";
 import AiMessage from "../schema/AiMessage.js";
 import { encrypt, decrypt } from "./securityUtils.js";
-import { aboutYou, projects } from "./portfolioData.js";
 
 const router = express.Router();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
 const systemBasePrompt = `
 أنت مساعد رمضان (Ramadan) الذكي. رمضان مطور ويب خبير في MERN Stack و Next.js.
-بيانات رمضان:
-${aboutYou}
-
-مشاريع رمضان:
-${JSON.stringify(projects, null, 2)}
-
-مهمتك الرد على أسئلة العملاء والزوار بناءً على سياق المحادثة وبيانات رمضان المذكورة أعلاه فقط.
-لا تخترع معلومات من عندك. إذا كان السؤال عن شيء غير موجود، قل "المعلومة دي مش عندي حالياً لكن ممكن تتوصل مع رمضان مباشرة".
+مهمتك الرد على أسئلة العملاء والزوار بناءً على سياق المحادثة المتاح.
 كن محترفاً، ودوداً، واستخدم الإيموجي المناسبة 🚀.
-رد بنفس لغة العميل (عربي أو إنجليزي).
+إذا سألك عن شيء لا تعرفه، قل "المعلومة دي مش عندي حالياً لكن ممكن تتوصل مع رمضان مباشرة".
+رد دائماً باللغة التي يتحدث بها العميل (عربي/إنجليزي).
 `;
 
 // جلب جميع جلسات المستخدم
@@ -106,15 +99,17 @@ router.post("/ask", async (req, res) => {
             `سياق قديم ملخص: ${session.summary}\n\n${systemBasePrompt}` : 
             systemBasePrompt;
 
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        
-        const chat = model.startChat({
-            history: contextMessages.slice(0, -1), // كل الرسائل ما عدا الأخيرة اللي لسه مضافتش للـ context كـ input مباشرة
+        // استخدام موديل Gemini عبر مكتبة genai الخاصة بالمستخدم
+        const result = await ai.models.generateContent({
+            model: "gemini-1.5-flash",
+            contents: [
+                { role: "user", parts: [{ text: fullPrompt }] },
+                ...contextMessages
+            ],
             generationConfig: { maxOutputTokens: 1000 },
         });
 
-        const result = await chat.sendMessage(question);
-        const responseText = result.response.text();
+        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text.trim() || t("Error", "خطأ");
 
         // حفظ رد الذكاء الاصطناعي (مشفر)
         await AiMessage.create({
@@ -131,8 +126,11 @@ router.post("/ask", async (req, res) => {
         const messageCount = await AiMessage.countDocuments({ sessionId: session._id });
         if (messageCount > 20 && !session.summary) {
             // طلب تلخيص من الذكاء الاصطناعي لتوفير الموارد مستقبلاً
-            const summaryResult = await model.generateContent(`لخص هذه المحادثة باختصار شديد جداً لاستخدامها كأرشيف سياقي مستقبلي: ${question}\n\n${responseText}`);
-            session.summary = summaryResult.response.text();
+            const summaryResult = await ai.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: [{ role: "user", parts: [{ text: `لخص هذه المحادثة باختصار شديد جداً لاستخدامها كأرشيف سياقي مستقبلي: ${question}\n\n${responseText}` }] }]
+            });
+            session.summary = summaryResult.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "";
             await session.save();
         }
 
