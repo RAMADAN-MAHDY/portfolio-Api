@@ -6,7 +6,7 @@ import AiMessage from "../schema/AiMessage.js";
 import { encrypt, decrypt } from "./securityUtils.js";
 
 const router = express.Router();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, apiVersion: "v1" });
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
 
 const systemBasePrompt = `
 أنت مساعد رمضان (Ramadan) الذكي. رمضان مطور ويب خبير في MERN Stack و Next.js.
@@ -101,7 +101,7 @@ router.post("/ask", async (req, res) => {
 
         // استخدام موديل Gemini عبر مكتبة genai الخاصة بالمستخدم
         const result = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
+            model: "Gemini 2.0 Flash",
             contents: [
                 { role: "user", parts: [{ text: fullPrompt }] },
                 ...contextMessages
@@ -127,7 +127,7 @@ router.post("/ask", async (req, res) => {
         if (messageCount > 20 && !session.summary) {
             // طلب تلخيص من الذكاء الاصطناعي لتوفير الموارد مستقبلاً
             const summaryResult = await ai.models.generateContent({
-                model: "gemini-1.5-flash",
+                model: "Gemini 2.0 Flash",
                 contents: [{ role: "user", parts: [{ text: `لخص هذه المحادثة باختصار شديد جداً لاستخدامها كأرشيف سياقي مستقبلي: ${question}\n\n${responseText}` }] }]
             });
             session.summary = summaryResult.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "";
