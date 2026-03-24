@@ -1,5 +1,5 @@
 import express from "express";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import "dotenv/config";
 import AiSession from "../schema/AiSession.js";
 import AiMessage from "../schema/AiMessage.js";
@@ -7,7 +7,7 @@ import { encrypt, decrypt } from "./securityUtils.js";
 import { aboutYou, projects } from "./portfolioData.js";
 
 const router = express.Router();
-const ai = new GoogleGenAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const systemBasePrompt = `
 أنت مساعد رمضان (Ramadan) الذكي. رمضان مطور ويب خبير في MERN Stack و Next.js.
@@ -106,7 +106,7 @@ router.post("/ask", async (req, res) => {
             `سياق قديم ملخص: ${session.summary}\n\n${systemBasePrompt}` : 
             systemBasePrompt;
 
-        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
         const chat = model.startChat({
             history: contextMessages.slice(0, -1), // كل الرسائل ما عدا الأخيرة اللي لسه مضافتش للـ context كـ input مباشرة
