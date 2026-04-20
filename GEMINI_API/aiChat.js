@@ -102,7 +102,7 @@ router.post("/ask", async (req, res) => {
 
         // استخدام موديل Gemini عبر مكتبة genai الخاصة بالمستخدم
         const result = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3-flash-preview",
             contents: [
                 { role: "user", parts: [{ text: fullPrompt }] },
                 ...contextMessages
@@ -128,7 +128,7 @@ router.post("/ask", async (req, res) => {
         if (messageCount > 20 && !session.summary) {
             // طلب تلخيص من الذكاء الاصطناعي لتوفير الموارد مستقبلاً
             const summaryResult = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-3-flash-preview",
                 contents: [{ role: "user", parts: [{ text: `لخص هذه المحادثة باختصار شديد جداً لاستخدامها كأرشيف سياقي مستقبلي: ${question}\n\n${responseText}` }] }]
             });
             session.summary = summaryResult.candidates?.[0]?.content?.parts?.[0]?.text.trim() || "";
