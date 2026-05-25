@@ -19,7 +19,15 @@ import aiTranslate from './GEMINI_API/aiTranslate.js';
 import generateWordRouter from './GEMINI_API/generateWordFromText.js';
 import uploadRouter from './GEMINI_API/uploadRouter.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath }  from 'url';
+
+// استيراد المسارات الجديدة
+
+import categoryRoutes from './router/categoryRoutes.js';
+import pdfRoutes from './router/pdfRoutes.js';
+
+// استيراد وسيط المصادقة
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,6 +98,11 @@ app.use('/admin/ai-chat', AdminAiChatRouter);
 app.use('/ai', aiTranslate);
 app.use('/ai', generateWordRouter);
 app.use('/upload', uploadRouter);
+
+// المسارات الجديدة لنظام إدارة ملفات PDF
+
+app.use('/api/categories', categoryRoutes); // مسارات الفئات (مفتوحة للجميع)
+app.use('/api/pdfs', pdfRoutes); // مسارات PDF (مفتوحة للجميع)
 
 // إعداد محرك القوالب EJS
 app.set('view engine', 'ejs');
