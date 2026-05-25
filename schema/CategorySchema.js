@@ -19,7 +19,8 @@ const categorySchema = new mongoose.Schema({
 });
 
 // إضافة فهرس لتحسين أداء الاستعلامات على اسم الفئة
-categorySchema.index({ name: 1 });
+// categorySchema.index({ name: 1 });
+
 
 const Category = mongoose.model('Category', categorySchema);
 
