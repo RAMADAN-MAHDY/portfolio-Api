@@ -1,4 +1,5 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -33,10 +34,43 @@ const uploadFile = async (fileBuffer, fileName, contentType, folder = '') => {
 
   try {
     await s3Client.send(new PutObjectCommand(uploadParams));
-    return key; // Return the key instead of full URL
+    return key;
   } catch (error) {
     console.error('Error uploading file to R2:', error);
     throw new Error('فشل رفع الملف إلى خدمة التخزين السحابي.');
+  }
+};
+
+const getPreSignedUrlForUpload = async (fileName, contentType, folder = '') => {
+  const key = folder ? `${folder}/${fileName}` : fileName;
+  const uploadParams = {
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  };
+
+  try {
+    const command = new PutObjectCommand(uploadParams);
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    return { signedUrl, key };
+  } catch (error) {
+    console.error('Error generating pre-signed URL:', error);
+    throw new Error('فشل إنشاء رابط للتخزين السحابي.');
+  }
+};
+
+const getFileStream = async (key) => {
+  const getParams = {
+    Bucket: R2_BUCKET_NAME,
+    Key: key,
+  };
+
+  try {
+    const response = await s3Client.send(new GetObjectCommand(getParams));
+    return response.Body;
+  } catch (error) {
+    console.error('Error getting file stream from R2:', error);
+    throw new Error('فشل الحصول على الملف من خدمة التخزين السحابي.');
   }
 };
 
@@ -55,4 +89,4 @@ const deleteFile = async (fileName) => {
   }
 };
 
-export { uploadFile, deleteFile };
+export { uploadFile, deleteFile, getPreSignedUrlForUpload, getFileStream };

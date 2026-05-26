@@ -1,5 +1,5 @@
 import express from 'express';
-import { addPdf, updatePdf, deletePdf, getPdfDetails, getAllPdfs, getPdfsByCategory, downloadPdf } from '../controllers/pdfController.js';
+import { addPdf, updatePdf, deletePdf, getPdfDetails, getAllPdfs, getPdfsByCategory, downloadPdf, directDownloadPdf } from '../controllers/pdfController.js';
 import upload from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
@@ -22,7 +22,10 @@ router.get('/', getAllPdfs);
 // جلب ملفات PDF حسب الفئة
 router.get('/category/:categoryId', getPdfsByCategory);
 
-// تحميل ملف PDF (تدفق آمن)
+// عرض ملف PDF (فتح في المتصفح)
 router.get('/download/:id', downloadPdf);
+
+// تحميل ملف PDF مباشرة
+router.get('/direct-download/:id', directDownloadPdf);
 
 export default router;

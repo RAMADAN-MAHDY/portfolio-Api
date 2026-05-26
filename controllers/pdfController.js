@@ -1,6 +1,6 @@
 import File from '../schema/FileSchema.js';
 import Category from '../schema/CategorySchema.js';
-import { uploadFile, deleteFile } from '../services/r2Service.js';
+import { uploadFile, deleteFile, getFileStream } from '../services/r2Service.js';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
@@ -220,7 +220,7 @@ export const getPdfsByCategory = async (req, res) => {
   }
 };
 
-// تحميل ملف PDF (تدفق آمن)
+// عرض ملف PDF (فتح في المتصفح)
 export const downloadPdf = async (req, res) => {
   try {
     const { id } = req.params;
@@ -233,7 +233,30 @@ export const downloadPdf = async (req, res) => {
     const fileUrl = `${process.env.R2_PUBLIC_URL}/${file.fileKey}`;
     res.redirect(fileUrl);
   } catch (error) {
+    console.error('Error viewing PDF:', error);
+    res.status(500).json({ message: error.message || 'فشل عرض ملف PDF.' });
+  }
+};
+
+// تحميل ملف PDF مباشرة (تجبر المتصفح على التحميل)
+export const directDownloadPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const file = await File.findById(id);
+
+    if (!file) {
+      return res.status(404).json({ message: 'ملف PDF غير موجود.' });
+    }
+
+    const fileStream = await getFileStream(file.fileKey);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}.pdf"`);
+    
+    fileStream.pipe(res);
+  } catch (error) {
     console.error('Error downloading PDF:', error);
     res.status(500).json({ message: error.message || 'فشل تحميل ملف PDF.' });
   }
 };
+
