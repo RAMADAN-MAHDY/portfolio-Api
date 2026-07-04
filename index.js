@@ -42,10 +42,17 @@ const port = 4000;
 const corsOptions = {
   origin: ['https://ramadan-three.vercel.app' , 'http://localhost:3000', 'https://ramadan-468ptjpbw-ramadans-projects-777f5ec4.vercel.app', 'https://portfolio-api-production-452b.up.railway.app'],
   optionsSuccessStatus: 200,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }
-//corsOptions
+
+// Apply CORS middleware globally
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
 connectDB();
 
 app.use(express.json());
